@@ -25,46 +25,42 @@
 
   <div class="container">
     <br>
-    <h2>Rating 서비스 요청 페이지</h2><br>
+    <h2>New Ledger 등록 페이지</h2><br>
     <!-- 폼 -> button, result 수정 및 추가 -->
 
-      <label class="form-label">Certificate:</label><br>
-      <input class="form-control" type="text" id="cert" value=""><br>
+      <label class="form-label">User ID:</label><br>
+      <input class="form-control" type="text" id="userid" value=""><br>
 
-      <label class="form-label">Serial:</label><br>
-      <input class="form-control" type="text" id="serial" value=""><br>
-
-      <label class="form-label">하자내용:</label><br>
-      <input class="form-control" type="text" id="info" value=""><br>
+      <label class="form-label">Service Type:</label><br>
+      <input class="form-control" type="text" id="role" value=""><br>
 
       <!-- <input class="btn btn-outline-primary" type="submit" value="Submit"> -->
-      <button id="service_btn" class="btn btn-outline-warning">굿즈 서비스 등록</button>
+      <button id="register_btn" class="btn btn-outline-warning">submit</button>
 
-    <p>If you click the "Submit" button, the form-data will be sent to a page called "/goods/service".</p>
-    <p id="service_result"></p>
+    <p>If you click the "Submit" button, the form-data will be sent to a page called "/ledger".</p>
+    <p id="register_result"></p>
   </div>
 
 </body>
 
 <!-- 스크립트 영역 추가  -->
 <script>
-  $("#service_btn").click( () => {
-      const cert = $("#cert").val();
-      const serial = $("#serial").val();
-      const info = $("#info").val();
+  $("#register_btn").click( () => {
+      const userid = $("#userid").val();
+      const role = $("#role").val();
 
-      $.post("/goods/service", {cert, serial, info}, (data, status) =>{
+      $.post("/ledger", {userid, role}, (data, status) =>{
 
           if(data.result == "success"){
-              $("#service_result").empty();
-              $("#service_result").append('<i class="fa-regular fa-circle-check fa-5x" ></i><br>')
+              $("#register_result").empty();
+              $("#register_result").append('<i class="fa-regular fa-circle-check fa-5x" ></i><br>')
               const res = JSON.stringify(data);
-              $("#service_result").append(res);
+              $("#register_result").append(res);
           } else {
-              $("#service_result").empty();
+              $("#register_result").empty();
               const res = JSON.stringify(data);
-              $("#service_result").append('<i class="fa-regular fa-circle-xmark fa-5x"></i><br>')
-              $("#service_result").append(res);
+              $("#register_result").append('<i class="fa-regular fa-circle-xmark fa-5x"></i><br>')
+              $("#register_result").append(res);
           }
       });
   });

@@ -24,3 +24,8 @@ package-lock.json
 # installed Fabric binaries etc.
 bin/
 builders/
+
+log.txt
+*.tar.gz
+
+wallet/

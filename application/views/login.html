@@ -26,7 +26,7 @@
 
     <div class="container">
         <br>
-            <h2>Sign up</h2><br>
+        <h2>Rating 로그인 페이지</h2><br>
 
             <label class="form-label">ID:</label><br>
             <input class="form-control" type="text" id="id" value=""><br>
@@ -34,40 +34,32 @@
             <label class="form-label">Password:</label><br>
             <input class="form-control" type="password" id="pw" value=""><br>
 
-            <label class="form-label">Role:</label><br>
-            <input class="form-control" type="text" id="role" value=""><br>
-
-            <label class="form-label">department:</label><br>
-            <input class="form-control" type="text" id="department" value=""><br>
-
             <!-- <input class="btn btn-outline-primary" type="submit" value="Submit"> -->
-            <button id="create_btn" class="btn btn-outline-success">Submit</button><br>
+            <button id="signin_btn" class="btn btn-success">Sign in</button><br>
 
-        <p>If you click the "Submit" button, the form-data will be sent to a page called "/user".</p><br>
-        <p id="create_result"></p>
+        <p>If you click the "Sign in" button, the form-data will be sent to a page called "/signin".</p><br>
+        <p id="signin_result"></p>
         <br>
     </div>
 </body>
 
 <script>
-    $("#create_btn").click( () => {
-        const userid = $("#id").val();
-        const userpw = $("#pw").val();
-        const userrole = $("#role").val();
-        const userdepart = $("#department").val();
+    $("#signin_btn").click( () => {
+        const id = $("#id").val();
+        const pw = $("#pw").val();
 
+        $.post("/signin", {id:id, pw:pw}, (data, status) =>{
 
-        $.post("/user", {uid:userid, role:userrole, depart:userdepart}, (data, status) =>{
             if(data.result == "success"){
-                $("#create_result").empty();
-                $("#create_result").append('<i class="fa-regular fa-circle-check fa-5x" ></i><br>')
+                $("#signin_result").empty();
+                $("#signin_result").append('<i class="fa-regular fa-circle-check fa-5x" ></i><br>')
                 const res = JSON.stringify(data);
-                $("#create_result").append(res);
+                $("#signin_result").append(res);
             } else {
-                $("#create_result").empty();
+                $("#signin_result").empty();
                 const res = JSON.stringify(data);
-                $("#create_result").append('<i class="fa-regular fa-circle-xmark fa-5x"></i><br>')
-                $("#create_result").append(res);
+                $("#signin_result").append('<i class="fa-regular fa-circle-xmark fa-5x"></i><br>')
+                $("#signin_result").append(res);
             }
         });
     });

@@ -29,6 +29,51 @@ app.get('/', (req, res) => {
 });
 
 // REST 라우팅
+// Ledger 등록
+app.post('/ledger', async (req, res) => {
+    // {cert, serial, email, info}
+    try {
+
+        const userid = req.body.userid;
+        const role = req.body.role;
+
+        console.log('/ledger-post-' + userid + '-' + role)
+
+        // 인증서 확인
+        const walletPath = path.join(process.cwd(), 'wallet');
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+        console.log(`Wallet path: ${walletPath}`);
+        const identity = await wallet.get(userid);
+
+        if (!identity) {
+            console.log('An identity for the user user does not exist in the wallet');
+            console.log('Run the registerUser.js application before retrying');
+            const result_obj = JSON.parse('{"result":"fail", "error":"An identity for the user does not exist in the wallet"}');
+            res.send(result_obj);
+            return;
+        }
+        // GW -> CH -> CC
+        const gateway = new Gateway();
+        await gateway.connect(ccp, { wallet, identity: userid, discovery: { enabled: true, asLocalhost: true } });
+
+        const network = await gateway.getNetwork('ratingchannel');
+        const contract = network.getContract('rating');
+
+        await contract.submitTransaction('InitLedger', userid, role);
+        console.log('Transaction has been submitted');
+        await gateway.disconnect();
+
+        // submit Transaction
+        const result_obj = JSON.parse('{"result":"success", "message":"Transaction has been submitted."}');
+        res.send(result_obj);
+    } catch (error) {
+        // client에게 결과 전송 - 실패
+        console.log('error occured in generating in submitting a transaction.');
+        const result_obj = JSON.parse('{"result":"fail", "error":"error occured in submitting a transaction."}');
+        res.send(result_obj);
+    }
+});
+
 // health 등록
 app.post('/health', async (req, res) => {
     // {cert, serial, email, info}
@@ -419,6 +464,18 @@ app.post('/user', async (req, res) => {
         await wallet.put(uid, x509Identity);
         console.log('Successfully registered and enrolled admin user ' + uid + ' and imported it into the wallet');
 
+        //TODO::initialize a first ledger if role is not "client"
+        // GW -> CH -> CC
+        // const gateway = new Gateway();
+        // await gateway.connect(ccp, { wallet, identity: uid, discovery: { enabled: true, asLocalhost: true } });
+
+        // const network = await gateway.getNetwork('ratingchannel');
+        // const contract = network.getContract('rating');
+
+        // await contract.submitTransaction('InitLedger', uid, role);
+        // console.log('Transaction has been submitted');
+        // await gateway.disconnect();
+
         // client에게 결과 전송 - 성공
         const result_obj = JSON.parse('{"result":"success", "message":"successfully enrolled and imported it into the wallet"}');
         res.send(result_obj);
@@ -427,11 +484,66 @@ app.post('/user', async (req, res) => {
 
         // client에게 결과 전송 - 실패
         console.log('error occured in generating a certificate.', error.message);
-        const result_obj = JSON.parse('{"result":"fail", "error":"error occured in generating a certificate."}');
+        const result_obj = JSON.parse('{"result":"fail", "error":"error occured in generating a certificate and initializing first ledger."}');
         res.send(result_obj);
     }
 });
 
+app.post('/signin', async (req, res) => {
+    // client로 부터 params받아오기
+    const id = req.body.id;
+    const pw = req.body.pw;
+
+    console.log('/signin-id-' + id + '-' + pw);
+
+    try {
+        // ccp 객체 구성
+        const ccpPath = path.resolve(__dirname, 'connection-org1.json');
+        const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+        // CA 객체 생성과 연결
+        const caInfo = ccp.certificateAuthorities['ca.org1.example.com'];
+        const caTLSCACerts = caInfo.tlsCACerts.pem;
+        const ca = new FabricCAServices(caInfo.url, { trustedRoots: caTLSCACerts, verify: false }, caInfo.caName);
+        // 지갑객체 생성과 기등록 admin 인증서 확인
+        const walletPath = path.join(process.cwd(), 'wallet');
+        const wallet = await Wallets.newFileSystemWallet(walletPath);
+        console.log(`Wallet path: ${walletPath}`);
+
+        // 기등록 admin있으면 
+        const identity = await wallet.get(aid);
+        if (identity) {
+            // client에게 결과 전송 - 실패
+            console.log('An identity for the admin user admin already exists in the wallet');
+            const result_obj = JSON.parse('{"result":"fail", "error":"An identity for the admin user admin already exists in the wallet"}');
+            res.send(result_obj);
+            return;
+        }
+        // CA에 관리자 인증서 등록
+        const enrollment = await ca.enroll({ enrollmentID: aid, enrollmentSecret: apw });
+        const x509Identity = {
+            credentials: {
+                certificate: enrollment.certificate,
+                privateKey: enrollment.key.toBytes(),
+            },
+            mspId: 'Org1MSP',
+            type: 'X.509',
+        };
+        // 관리자 인증서 저장
+        await wallet.put(aid, x509Identity);
+        console.log('Successfully enrolled admin user "admin" and imported it into the wallet');
+        // client에게 결과 전송 - 성공
+        const result_obj = JSON.parse('{"result":"success", "message":"successfully enrolled admin user admin and imported it into the wallet"}');
+        res.send(result_obj);
+
+    } catch (error) {
+
+        // client에게 결과 전송 - 실패
+        console.log('error occured in generating a certificate.');
+        const result_obj = JSON.parse('{"result":"fail", "error":"error occured in generating a certificate."}');
+        res.send(result_obj);
+    }
+});
+    
 // 서버시작
 app.listen(PORT, HOST);
 console.log(`Running on http://${HOST}:${PORT}`);
